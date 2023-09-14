@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 import os
 from dotenv import load_dotenv
-from controllers import categories
+from controllers import categories, socialsources
 
 load_dotenv()
 
@@ -11,6 +11,7 @@ api_port = os.environ.get("API_PORT")
 app = FastAPI()
 
 app.include_router(categories.router)
+app.include_router(socialsources.router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=api_port)
