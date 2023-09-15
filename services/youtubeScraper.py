@@ -39,12 +39,14 @@ class YouTubeScrapper:
 
         try:
             subs_txt = self.chrome.find_element(By.ID, 'subscriber-count').text
-            subs_txt = subs_txt.split(' ')[0]
-            response['subs'] = float(subs_txt)
+            subs = subs_txt.split(' ')[0]
+            subs = float(subs)
             if 'K' in subs_txt:
                 subs = subs*1000
             elif 'M' in subs_txt:
                 subs = subs*1000000
+
+            response['subs'] = subs
         except:
             response['subs'] = -1
 
