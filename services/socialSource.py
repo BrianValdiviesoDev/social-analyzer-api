@@ -1,5 +1,6 @@
 import uuid
 import asyncio
+import time
 from models.socialSource import SocialSourcePost
 from schemas.socialSource import socialSourceEntity, socialSourcesEntity
 from server.mongoClient import db
@@ -7,6 +8,7 @@ from .youtubeScraper import YouTubeScrapper
 collection = db['socialsources']
 youtubeCollection = db['youtubestatistics']
 youtubeVideoCollection = db['youtubevideos']
+youtubeVideoStatistics = db['youtubevideostatistics']
 
 
 async def findAll():
@@ -86,14 +88,18 @@ async def scrapeYoutubeChannel(id: str):
     statistics = await scraper.getChannelData()
     statistics["platfformId"] = socialSource["youtube"]["uuid"]
     youtubeCollection.insert_one(statistics)
-    return statistics
+
+    videos = await getYoutubeChannelVideos(id)
+
+    statistisc = await scrapeYouTubeVideos(videos)
+
+    return
 
 
-async def scrapeYoutubeVideos(id: str):
+async def getYoutubeChannelVideos(id: str):
     socialSource = collection.find_one({'uuid': id})
     if not socialSource:
         raise ValueError("Social source not found")
-
     scraper = YouTubeScrapper(socialSource["youtube"]["username"])
     videos = await scraper.getChannelVideos()
     for video in videos:
@@ -101,6 +107,17 @@ async def scrapeYoutubeVideos(id: str):
         video["platfformId"] = socialSource["youtube"]["uuid"]
 
     youtubeVideoCollection.insert_many(videos)
-    inserted = youtubeVideoCollection.find_one(
+    inserted = youtubeVideoCollection.find(
         {'platfformId': socialSource["youtube"]["uuid"]})
     return inserted
+
+
+async def scrapeYouTubeVideos(videos: list):
+    for video in videos:
+        print(f"Scraping {video}")
+        scraper = YouTubeScrapper()
+        info = await scraper.getVideoStatistics(video['url'])
+        info['videoId'] = video['uuid']
+        youtubeVideoStatistics.insert_one(info)
+        print(info)
+    return

@@ -2,7 +2,7 @@
 import asyncio
 from fastapi import APIRouter, status
 from fastapi import APIRouter, HTTPException
-from services.socialSource import findAll, addSocialSource, findSocialSourceById, updateSocialSource, restore, softDelete, scrapeYoutubeChannel, scrapeYoutubeVideos
+from services.socialSource import findAll, addSocialSource, findSocialSourceById, updateSocialSource, restore, softDelete, scrapeYoutubeChannel, getYoutubeChannelVideos, scrapeYouTubeVideos
 from models.socialSource import SocialSource, SocialSourcePost, YoutubeStatistics
 
 router = APIRouter(prefix="/socialsource",
@@ -51,13 +51,13 @@ async def update(id: str):
     return updated
 
 
-@router.get("/scrapper/youtube/{id}", response_model=YoutubeStatistics, status_code=status.HTTP_200_OK)
+@router.get("/scrapper/youtube/{id}", response_model=str, status_code=status.HTTP_200_OK)
 async def get(id: str):
-    statistics = await scrapeYoutubeChannel(id)
-    return statistics
+    asyncio.create_task(scrapeYoutubeChannel(id))
+    return 'scrapping...'
 
 
 @router.get("/scrapper/youtube/videos/{id}", response_model=str, status_code=status.HTTP_200_OK)
 async def get(id: str):
-    asyncio.create_task(scrapeYoutubeVideos(id))
+    asyncio.create_task(getYoutubeChannelVideos(id))
     return 'scrapping...'

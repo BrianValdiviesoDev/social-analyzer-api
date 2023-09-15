@@ -5,13 +5,15 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from models.socialSource import YoutubeStatistics
 from datetime import datetime
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 class YouTubeScrapper:
-    def __init__(self, user):
+    def __init__(self, user=''):
         self.user = user
         self.options = Options()
-        # self.options.add_argument("--headless")
+        self.options.add_argument("--headless")
         self.chrome = webdriver.Chrome(options=self.options)
 
     async def getChannelData(self) -> dict:
@@ -73,6 +75,7 @@ class YouTubeScrapper:
         except:
             response['visualizations'] = -1
         print(response)
+        self.chrome.quit()
         return response
 
     def transformDate(self, fecha_str):
@@ -133,15 +136,102 @@ class YouTubeScrapper:
                 next_item = next_item+1
 
             print(f"{len(videos)} videos scrapeados")
-            print("=================================SCROLL=====================")
             self.chrome.execute_script(
                 "arguments[0].scrollIntoView(true);", inifinityScroll)
-            print(f"Await...")
             time.sleep(2)
             new_rows = self.chrome.find_elements(
                 By.TAG_NAME, 'ytd-rich-grid-row')
             if len(new_rows) == len(prev_rows):
-                print(f"FIN DEL SCROLL  -> {prev_rows} - {new_rows}")
                 end_scroll = True
-
+        self.chrome.quit()
         return videos
+
+    async def getVideoStatistics(self, url):
+        # accept cookies
+        self.chrome.get(url)
+        dialog = WebDriverWait(self.chrome, 10).until(
+            EC.presence_of_element_located((By.ID, 'dialog'))
+        )
+
+        buttons = dialog.find_elements(By.TAG_NAME, 'button')
+        button = buttons[len(buttons) - 1]
+        button.click()
+        dialog = WebDriverWait(self.chrome, 10).until_not(
+            EC.presence_of_element_located((By.ID, 'dialog'))
+        )
+        description = WebDriverWait(self.chrome, 10).until(
+            EC.presence_of_element_located((By.ID, 'description-inner'))
+        )
+        description.click()
+        info = WebDriverWait(self.chrome, 10).until(
+            EC.presence_of_element_located((By.ID, 'info-container'))
+        )
+
+        spans = info.find_elements(By.TAG_NAME, 'span')
+
+        try:
+            visualizations = spans[0].text
+            visualizations = str(visualizations).replace('.', '')
+            views = visualizations.split(' ')[0]
+            views = float(views)
+            if 'K' in visualizations:
+                views = views*1000
+            elif 'M' in visualizations:
+                views = views*1000000
+        except:
+            visualizations = -1
+
+        try:
+            date = spans[2].text
+            date = date.split(': ')[1]
+            date = self.transformDate(date)
+        except:
+            date = 'NOT FOUND'
+
+        try:
+            actions = self.chrome.find_element(By.ID, 'actions')
+            menu = actions.find_element(By.TAG_NAME, 'ytd-menu-renderer')
+            buttons = menu.find_elements(By.TAG_NAME, 'button')
+            likeButton = buttons[0]
+            likes_txt = likeButton.get_attribute('aria-label')
+            likes_txt = likes_txt.split(' ')
+            likes = 0
+            for part in likes_txt:
+                if part.isdigit():
+                    likes = float(part)
+                    break
+        except:
+            likes = -1
+
+        try:
+            videoDescription = self.chrome.find_element(
+                By.TAG_NAME, 'ytd-text-inline-expander').text
+        except:
+            videoDescription = 'NOT FOUND'
+
+        try:
+            comments = 0
+            self.chrome.execute_script("window.scrollBy(0, 5000);")
+            time.sleep(1)
+            self.chrome.execute_script("window.scrollBy(0, 5000);")
+            time.sleep(1)
+
+            h2 = self.chrome.find_elements(By.TAG_NAME, 'h2')
+            for e in h2:
+                count = e.find_element(By.TAG_NAME, 'yt-formatted-string')
+                if count:
+                    spans = count.find_elements(By.TAG_NAME, 'span')
+                    if len(spans) > 0:
+                        comments = spans[0].text
+        except:
+            comments = -1
+
+        self.chrome.quit()
+        return {
+            'views': views,
+            'date': date,
+            'likes': likes,
+            'comments': comments,
+            'description': videoDescription,
+            "timestamp": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        }
