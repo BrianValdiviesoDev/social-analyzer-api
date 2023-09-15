@@ -5,6 +5,8 @@ from server.mongoClient import db
 from .youtubeScraper import YouTubeScrapper
 collection = db['socialsources']
 youtubeCollection = db['youtubestatistics']
+youtubeVideoCollection = db['youtubevideos']
+
 
 async def findAll():
     return socialSourcesEntity(collection.find())
@@ -84,3 +86,20 @@ async def scrapeYoutubeChannel(id: str):
     statistics["platfformId"] = socialSource["youtube"]["uuid"]
     youtubeCollection.insert_one(statistics)
     return statistics
+
+
+async def scrapeYoutubeVideos(id: str):
+    socialSource = collection.find_one({'uuid': id})
+    if not socialSource:
+        raise ValueError("Social source not found")
+
+    scraper = YouTubeScrapper(socialSource["youtube"]["username"])
+    videos = await scraper.getChannelVideos()
+    for video in videos:
+        video["uuid"] = str(uuid.uuid4())
+        video["platfformId"] = socialSource["youtube"]["uuid"]
+
+    youtubeVideoCollection.insert_many(videos)
+    inserted = youtubeVideoCollection.find_one(
+        {'platfformId': socialSource["youtube"]["uuid"]})
+    return inserted

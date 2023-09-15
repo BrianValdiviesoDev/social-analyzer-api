@@ -11,7 +11,7 @@ class YouTubeScrapper:
     def __init__(self, user):
         self.user = user
         self.options = Options()
-        self.options.add_argument("--headless")
+        # self.options.add_argument("--headless")
         self.chrome = webdriver.Chrome(options=self.options)
 
     async def getChannelData(self) -> dict:
@@ -92,32 +92,54 @@ class YouTubeScrapper:
 
         return result
 
-    def getChannelVideos(self, channelName):
-        url = f"https://www.youtube.com/results?search_query={channelName}&sp=EgIQAQ%253D%253D"
+    async def getChannelVideos(self):
+        url = f"https://www.youtube.com/@{self.user}/videos"
 
         # accept cookies
-        self.driver.get(url)
-        self.driver.find_element(By.TAG_NAME, 'button').click()
+        self.chrome.get(url)
+        self.chrome.find_element(By.TAG_NAME, 'button').click()
 
-        video_links = []
-        while len(video_links) < 3:
-            items = self.driver.find_elements(By.ID, 'dismissible')
-            for i in items:
-                if channelName in i.text:
-                    urls = i.find_elements(By.TAG_NAME, 'a')
-                    for a in urls:
-                        if 'video-title' in a.get_attribute('id'):
-                            href = a.get_attribute('href')
-                            video_links.append(href)
-            print("LINKS: ", len(video_links))
-            self.driver.execute_script(
-                "window.scrollTo(0, document.body.scrollHeight);")
+        inifinityScroll = self.chrome.find_element(By.ID, 'refresh')
+        videos = []
+        end_scroll = False
+        next_item = 0
+        while not end_scroll:
+            prev_rows = self.chrome.find_elements(
+                By.TAG_NAME, 'ytd-rich-grid-row')
+            items = self.chrome.find_elements(By.ID, 'dismissible')
+            print(f"Hay {len(items)} items")
+            while next_item < len(items):
+                item = items[next_item]
+                thumbnail = ''
+                while thumbnail == '':
+                    img = item.find_element(
+                        By.TAG_NAME, 'img')
+                    thumbnail = img.get_property('src')
+                    self.chrome.execute_script(
+                        "arguments[0].scrollIntoView(true);", img)
+                    time.sleep(0.5)
+
+                link = item.find_element(By.ID, 'video-title-link')
+                href = link.get_attribute('href')
+                title = link.text
+                video = {
+                    "url": href,
+                    "title": title,
+                    "thumbnail": thumbnail
+                }
+                videos.append(video)
+                next_item = next_item+1
+
+            print(f"{len(videos)} videos scrapeados")
+            print("=================================SCROLL=====================")
+            self.chrome.execute_script(
+                "arguments[0].scrollIntoView(true);", inifinityScroll)
+            print(f"Await...")
             time.sleep(2)
+            new_rows = self.chrome.find_elements(
+                By.TAG_NAME, 'ytd-rich-grid-row')
+            if len(new_rows) == len(prev_rows):
+                print(f"FIN DEL SCROLL  -> {prev_rows} - {new_rows}")
+                end_scroll = True
 
-        for url in video_links:
-            print("-> ", url)
-            self.driver.get(url)
-            title = self.driver.find_element(By.ID, 'title').text
-            print(title)
-            metadata = self.driver.find_element(By.ID, 'info-container').text
-            print(metadata)
+        return videos

@@ -28,10 +28,11 @@ def socialPlatfform(data) -> dict:
 
 def youtubeVideo(data) -> dict:
     return {
+        "uuid": data["uuid"],
         "url": data["url"],
-        "statistics": data["statistics"],
         "platfformId": data["platfformId"],
-        "description": data["description"],
+        "title": data["title"],
+        "thumbnail": data["thumbnail"],
     }
 
 

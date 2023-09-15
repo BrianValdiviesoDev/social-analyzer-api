@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter, status
 from fastapi import APIRouter, HTTPException
-from services.socialSource import findAll, addSocialSource, findSocialSourceById, updateSocialSource, restore, softDelete, scrapeYoutubeChannel
+from services.socialSource import findAll, addSocialSource, findSocialSourceById, updateSocialSource, restore, softDelete, scrapeYoutubeChannel, scrapeYoutubeVideos
 from models.socialSource import SocialSource, SocialSourcePost, YoutubeStatistics
 
 router = APIRouter(prefix="/socialsource",
@@ -54,3 +54,9 @@ async def update(id: str):
 async def get(id: str):
     statistics = await scrapeYoutubeChannel(id)
     return statistics
+
+
+@router.get("/scrapper/youtube/videos/{id}", response_model=list, status_code=status.HTTP_200_OK)
+async def get(id: str):
+    videos = await scrapeYoutubeVideos(id)
+    return videos

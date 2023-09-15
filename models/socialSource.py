@@ -24,10 +24,11 @@ class YoutubeVideoStatistics(BaseModel):
 
 
 class YoutubeVideo(BaseModel):
+    uuid: str
     plattformId: str
     url: str
-    statistics: YoutubeVideoStatistics
-    description: str
+    title: str
+    thumbnail: str
 
 
 class SocialPlatfform(TypedDict, total=False):
