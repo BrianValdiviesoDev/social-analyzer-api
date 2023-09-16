@@ -2,8 +2,8 @@
 import asyncio
 from fastapi import APIRouter, status
 from fastapi import APIRouter, HTTPException
-from services.socialSource import findAll, addSocialSource, findSocialSourceById, updateSocialSource, restore, softDelete, scrapeYoutubeChannel, getYoutubeChannelVideos, scrapeYouTubeVideos
-from models.socialSource import SocialSource, SocialSourcePost, YoutubeStatistics
+from services.socialSource import findAll, addSocialSource, findSocialSourceById, updateSocialSource, restore, softDelete, scrapeYoutubeChannel, getYoutubeChannelVideos, scrapeYouTubeVideos, findYoutubeStats, findYoutubeChannelVideos, findYoutubeVideo
+from models.socialSource import SocialSource, SocialSourcePost, YoutubeStatistics, YoutubeVideo, YoutubeVideosIds
 
 router = APIRouter(prefix="/socialsource",
                    tags=["socialsource"],
@@ -51,13 +51,47 @@ async def update(id: str):
     return updated
 
 
-@router.get("/scrapper/youtube/{id}", response_model=str, status_code=status.HTTP_200_OK)
-async def get(id: str):
+@router.post("/scrapper/youtube/{id}", response_model=str, status_code=status.HTTP_200_OK)
+async def scrapeYoutube(id: str):
     asyncio.create_task(scrapeYoutubeChannel(id))
     return 'scrapping...'
 
 
-@router.get("/scrapper/youtube/videos/{id}", response_model=str, status_code=status.HTTP_200_OK)
-async def get(id: str):
+@router.post("/scrapper/youtube/{id}/channel", response_model=str, status_code=status.HTTP_200_OK)
+async def getYoutubeVideos(id: str):
     asyncio.create_task(getYoutubeChannelVideos(id))
     return 'scrapping...'
+
+
+@router.post("/scrapper/youtube/{id}/videos", response_model=str, status_code=status.HTTP_200_OK)
+async def getYoutubeVideos(id: str, ids: YoutubeVideosIds):
+    if not ids:
+        asyncio.create_task(getYoutubeChannelVideos(id))
+
+    asyncio.create_task(scrapeYouTubeVideos(ids.ids))
+    return 'scrapping...'
+
+
+@router.get("/youtube/{platformId}", response_model=YoutubeStatistics, status_code=status.HTTP_200_OK)
+async def get(platformId: str):
+    stats = await findYoutubeStats(platformId)
+    if not stats:
+        raise HTTPException(
+            status_code=404, detail="YouTube Channel not found")
+    return stats
+
+
+@router.get("/youtube/{platformId}/videos", response_model=list, status_code=status.HTTP_200_OK)
+async def get(platformId: str):
+    videos = await findYoutubeChannelVideos(platformId)
+    if not videos:
+        raise HTTPException(status_code=404, detail="Videos not found")
+    return videos
+
+
+@router.get("/youtube/{platformId}/video/{id}", response_model=list, status_code=status.HTTP_200_OK)
+async def get(platformId: str, id: str):
+    video = await findYoutubeVideo(platformId, id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    return video

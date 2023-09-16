@@ -5,7 +5,7 @@ from typing_extensions import TypedDict
 
 
 class YoutubeStatistics(BaseModel):
-    platfformId: str
+    platformId: str
     channelName: str
     subs: float
     videos: float
@@ -25,10 +25,14 @@ class YoutubeVideoStatistics(BaseModel):
 
 class YoutubeVideo(BaseModel):
     uuid: str
-    plattformId: str
+    platformId: str
     url: str
     title: str
     thumbnail: str
+
+
+class YoutubeVideosIds(BaseModel):
+    ids: list
 
 
 class SocialPlatfform(TypedDict, total=False):

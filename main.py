@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 from controllers import categories, socialsources
@@ -9,6 +10,20 @@ load_dotenv()
 api_port = os.environ.get("API_PORT")
 
 app = FastAPI()
+
+
+origins = [
+    "http://localhost:3000",  # TODO change to allow only requests from ApiGateway
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 app.include_router(categories.router)
 app.include_router(socialsources.router)

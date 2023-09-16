@@ -1,4 +1,4 @@
-def socialSourceEntity(data) -> dict:
+def socialSourceDto(data) -> dict:
     return {
         "uuid": data["uuid"],
         "name": data["name"],
@@ -15,39 +15,48 @@ def socialSourceEntity(data) -> dict:
     }
 
 
-def socialSourcesEntity(data) -> list:
-    return [socialSourceEntity(ss) for ss in data]
+def socialSourcesDto(data) -> list:
+    return [socialSourceDto(ss) for ss in data]
 
 
-def socialPlatfform(data) -> dict:
+def socialPlatfformDto(data) -> dict:
     return {
         "uuid": data["uuid"],
         "username": data["username"],
     }
 
 
-def youtubeVideo(data) -> dict:
+def youtubeVideoDto(data) -> dict:
     return {
         "uuid": data["uuid"],
         "url": data["url"],
-        "platfformId": data["platfformId"],
+        "platformId": data["platformId"],
         "title": data["title"],
         "thumbnail": data["thumbnail"],
+        "stats": data['stats']
     }
 
 
-def YoutubeVideoStatistics(data) -> dict:
+def youtubeVideosDto(data) -> list:
+    return [youtubeVideoDto(v) for v in data]
+
+
+def YoutubeVideoStatisticDto(data) -> dict:
     return {
-        "title": data["title"],
-        "visualizations": data["visualizations"],
-        "published": data["published"],
+        "description": data["description"],
+        "views": data["views"],
+        "date": data["date"],
         "comments": data["comments"],
         "likes": data["likes"],
         "timestamp": data["timestamp"],
     }
 
 
-def YoutubeStatistics(data) -> dict:
+def YoutubeVideoStatisticsDto(data) -> list:
+    return [YoutubeVideoStatisticsDto(v) for v in data]
+
+
+def YoutubeStatisticsDto(data) -> dict:
     return {
         "channelName": data["channelName"],
         "subs": data["subs"],
