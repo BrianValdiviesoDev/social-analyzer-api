@@ -4,7 +4,7 @@ import time
 
 from pymongo import DESCENDING
 from models.socialSource import SocialSourcePost
-from schemas.socialSource import socialSourceDto, socialSourcesDto, youtubeVideosDto, YoutubeVideoStatisticDto
+from schemas.socialSource import YoutubeVideoStatisticsDto, socialSourceDto, socialSourcesDto, youtubeVideosDto
 from server.mongoClient import db
 from .youtubeScraper import YouTubeScrapper
 collection = db['socialsources']
@@ -55,7 +55,7 @@ async def addSocialSource(socialsource: SocialSourcePost):
 
     collection.insert_one(new_socialsource)
     created = collection.find_one({"uuid": new_socialsource['uuid']})
-    return socialSourceEntity(created)
+    return socialSourceDto(created)
 
 
 async def findSocialSourceById(id: str):
@@ -66,19 +66,19 @@ async def updateSocialSource(id: str, socialsource: SocialSourcePost):
     update_data = dict(socialsource)
     collection.find_one_and_update({'uuid': id}, {"$set": update_data})
     updated = collection.find_one({"uuid": id})
-    return socialSourceEntity(updated)
+    return socialSourceDto(updated)
 
 
 async def restore(id: str):
     collection.find_one_and_update({'uuid': id}, {"$set": {'active': True}})
     updated = collection.find_one({"uuid": id})
-    return socialSourceEntity(updated)
+    return socialSourceDto(updated)
 
 
 async def softDelete(id: str):
     collection.find_one_and_update({'uuid': id}, {"$set": {'active': False}})
     updated = collection.find_one({"uuid": id})
-    return socialSourceEntity(updated)
+    return socialSourceDto(updated)
 
 
 async def scrapeYoutubeChannel(id: str):
@@ -134,11 +134,10 @@ async def findYoutubeStats(platformId: str):
 async def findYoutubeChannelVideos(platformId: str):
     videos = youtubeVideoCollection.find({'platformId': platformId})
     response = []
-    print(videos)
     for video in videos:
         lastStat = youtubeVideoStatistics.find_one(
             {'videoId': video['uuid']}, sort=[("timestamp", DESCENDING)])
-        video['stats'] = YoutubeVideoStatisticDto(lastStat)
+        video['stats'] = YoutubeVideoStatisticsDto([lastStat])
         response.append(video)
     return youtubeVideosDto(response)
 
@@ -148,9 +147,8 @@ async def findYoutubeVideo(platformId: str, id: str):
     if not platform:
         raise ValueError('Platform not found')
 
-    video = youtubeVideoCollection.find({'uuid': id})
+    video = youtubeVideoCollection.find_one({'uuid': id})
     stats = youtubeVideoStatistics.find(
         {'videoId': id}, sort=[("timestamp", DESCENDING)])
-    video['stats'] = stats
-
+    video['stats'] = YoutubeVideoStatisticsDto(stats)
     return video

@@ -49,11 +49,12 @@ def YoutubeVideoStatisticDto(data) -> dict:
         "comments": data["comments"],
         "likes": data["likes"],
         "timestamp": data["timestamp"],
+        "videoId": data["videoId"]
     }
 
 
 def YoutubeVideoStatisticsDto(data) -> list:
-    return [YoutubeVideoStatisticsDto(v) for v in data]
+    return [YoutubeVideoStatisticDto(v) for v in data]
 
 
 def YoutubeStatisticsDto(data) -> dict:

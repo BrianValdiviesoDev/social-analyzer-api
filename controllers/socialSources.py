@@ -3,7 +3,7 @@ import asyncio
 from fastapi import APIRouter, status
 from fastapi import APIRouter, HTTPException
 from services.socialSource import findAll, addSocialSource, findSocialSourceById, updateSocialSource, restore, softDelete, scrapeYoutubeChannel, getYoutubeChannelVideos, scrapeYouTubeVideos, findYoutubeStats, findYoutubeChannelVideos, findYoutubeVideo
-from models.socialSource import SocialSource, SocialSourcePost, YoutubeStatistics, YoutubeVideo, YoutubeVideosIds
+from models.socialSource import SocialSource, SocialSourcePost, YoutubeStatistics, YoutubeVideo, YoutubeVideoResponse, YoutubeVideosIds
 
 router = APIRouter(prefix="/socialsource",
                    tags=["socialsource"],
@@ -81,7 +81,7 @@ async def get(platformId: str):
     return stats
 
 
-@router.get("/youtube/{platformId}/videos", response_model=list, status_code=status.HTTP_200_OK)
+@router.get("/youtube/{platformId}/videos", response_model=list[YoutubeVideoResponse], status_code=status.HTTP_200_OK)
 async def get(platformId: str):
     videos = await findYoutubeChannelVideos(platformId)
     if not videos:
@@ -89,7 +89,7 @@ async def get(platformId: str):
     return videos
 
 
-@router.get("/youtube/{platformId}/video/{id}", response_model=list, status_code=status.HTTP_200_OK)
+@router.get("/youtube/{platformId}/video/{id}", response_model=YoutubeVideoResponse, status_code=status.HTTP_200_OK)
 async def get(platformId: str, id: str):
     video = await findYoutubeVideo(platformId, id)
     if not video:

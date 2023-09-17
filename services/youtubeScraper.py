@@ -183,8 +183,12 @@ class YouTubeScrapper:
 
         try:
             date = spans[2].text
-            date = date.split(': ')[1]
-            date = self.transformDate(date)
+            try:
+                date = self.transformDate(date)
+            except:
+                if ":" in date:
+                    date = date.split(': ')[1]
+                    date = self.transformDate(date)
         except:
             date = 'NOT FOUND'
 

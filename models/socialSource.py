@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from typing import Optional
-import datetime
 from typing_extensions import TypedDict
 
 
@@ -15,12 +14,13 @@ class YoutubeStatistics(BaseModel):
 
 
 class YoutubeVideoStatistics(BaseModel):
-    title: str
-    visualizations: str
-    published: datetime.date
+    description: str
+    views: float
+    date: str
     comments: float
     likes: float
-    timestamp: datetime.datetime
+    timestamp: str
+    videoId: str
 
 
 class YoutubeVideo(BaseModel):
@@ -29,6 +29,15 @@ class YoutubeVideo(BaseModel):
     url: str
     title: str
     thumbnail: str
+
+
+class YoutubeVideoResponse(BaseModel):
+    uuid: str
+    platformId: str
+    url: str
+    title: str
+    thumbnail: str
+    stats: list[YoutubeVideoStatistics]
 
 
 class YoutubeVideosIds(BaseModel):
