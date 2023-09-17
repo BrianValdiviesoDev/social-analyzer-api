@@ -137,7 +137,10 @@ async def findYoutubeChannelVideos(platformId: str):
     for video in videos:
         lastStat = youtubeVideoStatistics.find_one(
             {'videoId': video['uuid']}, sort=[("timestamp", DESCENDING)])
-        video['stats'] = YoutubeVideoStatisticsDto([lastStat])
+        try:
+            video['stats'] = YoutubeVideoStatisticsDto([lastStat])
+        except:
+            video['stats'] = []
         response.append(video)
     return youtubeVideosDto(response)
 
