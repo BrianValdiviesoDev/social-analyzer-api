@@ -63,10 +63,16 @@ MongoDB server
     uvicorn main:app --reload
 ```
 
+5. Run scrapper:
+   You need to open another instance of the project in other port to run scrapper and no block api responses
+
+```bash
+    uvicorn main:app --reload --port 8002
+```
+
 ## TODOs
 
-- [ ] Refactor: separate platforms from social sources
-- [ ] Add "Posts"
+- [x] Refactor: separate platforms from social sources
 - [ ] Implements authorization with API Gateway
 - [ ] Create a queue of scrapes
 - [ ] Create another instance to scrapes for no block api

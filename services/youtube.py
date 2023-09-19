@@ -3,26 +3,30 @@ from dtos.youtube import YoutubeVideoStatisticsDto, youtubeVideosDto
 from server.mongoClient import db
 from pymongo import DESCENDING
 from services.youtubeScraper import YouTubeScrapper
+
+
 socialSourceCollenction = db['socialsources']
 youtubeStatsCollection = db['youtubestatistics']
 youtubeVideoCollection = db['youtubevideos']
 youtubeVideoStatistics = db['youtubevideostatistics']
 
+
 async def scrapeYoutubeChannel(id: str):
+    stats = await getYoutubeChannelStats(id)
+    videos = await getYoutubeChannelVideos(id)
+    ids = [item['uuid'] for item in videos]
+    statistisc = await scrapeYouTubeVideos(ids)
+    return
+
+
+async def getYoutubeChannelStats(id: str):
     socialSource = socialSourceCollenction.find_one({'uuid': id})
     if not socialSource:
         raise ValueError("Social source not found")
-
     scraper = YouTubeScrapper(socialSource["youtube"]["username"])
     statistics = await scraper.getChannelData()
     statistics["platformId"] = socialSource["youtube"]["uuid"]
     youtubeStatsCollection.insert_one(statistics)
-
-    videos = await getYoutubeChannelVideos(id)
-    ids = [item['uuid'] for item in videos]
-    statistisc = await scrapeYouTubeVideos(ids)
-
-    return
 
 
 async def getYoutubeChannelVideos(id: str):
@@ -31,11 +35,15 @@ async def getYoutubeChannelVideos(id: str):
         raise ValueError("Social source not found")
     scraper = YouTubeScrapper(socialSource["youtube"]["username"])
     videos = await scraper.getChannelVideos()
+    dataToInsert = []
     for video in videos:
-        video["uuid"] = str(uuid.uuid4())
-        video["platformId"] = socialSource["youtube"]["uuid"]
+        exists = youtubeVideoCollection.find_one({"url": video["url"]})
+        if not exists:
+            video["uuid"] = str(uuid.uuid4())
+            video["platformId"] = socialSource["youtube"]["uuid"]
+            dataToInsert.append(video)
 
-    youtubeVideoCollection.insert_many(videos)
+    youtubeVideoCollection.insert_many(dataToInsert)
     inserted = youtubeVideoCollection.find(
         {'platformId': socialSource["youtube"]["uuid"]})
     return inserted

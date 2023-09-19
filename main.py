@@ -13,7 +13,7 @@ app = FastAPI()
 
 
 origins = [
-    "http://localhost:3000",  # TODO change to allow only requests from ApiGateway
+    "http://localhost:3002",  # TODO change to allow only requests from ApiGateway
 ]
 
 app.add_middleware(
