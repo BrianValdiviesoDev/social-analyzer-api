@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
-from controllers import categories, socialsources, youtube
-
+from controllers import socialsources
+from server.postgres import init_db
 load_dotenv()
 
 api_port = os.environ.get("API_PORT")
@@ -25,9 +25,13 @@ app.add_middleware(
 )
 
 
-app.include_router(categories.router)
 app.include_router(socialsources.router)
-app.include_router(youtube.router)
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=api_port)

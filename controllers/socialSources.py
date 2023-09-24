@@ -1,49 +1,32 @@
 
-from fastapi import APIRouter, status, HTTPException
-from services.socialSource import findAll, addSocialSource, findSocialSourceById, updateSocialSource, restore, softDelete
-from models.socialSource import SocialSource, SocialSourcePost
-
+from fastapi import APIRouter, status, HTTPException, Depends
+from sqlalchemy.orm import Session
+from server.postgres import get_session
+from services.socialSource import addSocialSource, findAllSocialSources, findSocialSourceById
+from models.socialSource import SocialSource
+from schemas.socialSource import SocialSource, SocialSourceBase
 router = APIRouter(prefix="/socialsource",
                    tags=["socialsource"],
                    responses={404: {"message": "Not found"}})
 
 
-@router.get("/", response_model=list[SocialSource], status_code=status.HTTP_200_OK)
-async def getAll():
-    list = await findAll()
-    if not list:
-        raise HTTPException(
-            status_code=404, detail="There is any social source yet")
-    return list
-
-
-@router.post("/", response_model=SocialSourcePost, status_code=status.HTTP_201_CREATED)
-async def post(socialsource: SocialSourcePost):
-    new_socialsource = await addSocialSource(socialsource)
+@router.post("/",  response_model=SocialSource, status_code=status.HTTP_201_CREATED)
+async def post(socialsource: SocialSourceBase, session: Session = Depends(get_session)):
+    new_socialsource = await addSocialSource(session, socialsource)
     return new_socialsource
 
 
-@router.get("/{id}", response_model=SocialSource, status_code=status.HTTP_200_OK)
-async def get(id: str):
-    socialsource = await findSocialSourceById(id)
-    if not socialsource:
-        raise HTTPException(status_code=404, detail="SocialSource not found")
-    return socialsource
+@router.get("/", response_model=list[SocialSource], status_code=status.HTTP_200_OK)
+async def get(session: Session = Depends(get_session)):
+    ss = await findAllSocialSources(session)
+    if not ss:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    return ss
 
 
-@router.put("/{id}", response_model=SocialSource, status_code=status.HTTP_200_OK)
-async def update(id: str, socialsource: SocialSourcePost):
-    updated = await updateSocialSource(id, socialsource)
-    return updated
-
-
-@router.put("/{id}/delete", response_model=SocialSource, status_code=status.HTTP_200_OK)
-async def update(id: str):
-    updated = await softDelete(id)
-    return updated
-
-
-@router.put("/{id}/restore", response_model=SocialSourcePost, status_code=status.HTTP_200_OK)
-async def update(id: str):
-    updated = await restore(id)
-    return updated
+@router.get("/{uuid}",  response_model=SocialSource, status_code=status.HTTP_200_OK)
+async def get(uuid: str, session: Session = Depends(get_session)):
+    ss = await findSocialSourceById(session, uuid)
+    if not ss:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    return ss
