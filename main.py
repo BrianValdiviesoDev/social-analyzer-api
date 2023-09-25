@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
-from controllers import socialsources
+from controllers import socialsources, youtube
 from server.postgres import init_db
 load_dotenv()
 
@@ -26,6 +26,7 @@ app.add_middleware(
 
 
 app.include_router(socialsources.router)
+app.include_router(youtube.router)
 
 
 @app.on_event("startup")

@@ -1,42 +1,55 @@
+import datetime
 from pydantic import BaseModel
+from typing import List
 
 
-class YoutubeStatistics(BaseModel):
-    platformId: str
-    channelName: str
-    subs: float
-    videos: float
-    visualizations: float
-    startAt: str
-    timestamp: str
+class YoutubeChannelPost(BaseModel):
+    username: str
 
 
-class YoutubeVideoStatistics(BaseModel):
-    description: str
-    views: float | str
-    date: str
-    comments: float | str
-    likes: float | str
-    timestamp: str
-    videoId: str
-
-
-class YoutubeVideo(BaseModel):
+class YoutubeChannelResponse(YoutubeChannelPost):
     uuid: str
-    platformId: str
-    url: str
-    title: str
-    thumbnail: str
 
 
-class YoutubeVideoResponse(BaseModel):
+class YoutubeStatsPost(BaseModel):
+    timestamp: datetime.datetime | None
+    subs: float | None
+    videos: float | None
+    views: float | None
+    startAt: datetime.date | None
+
+
+class YoutubeStatsResponse(YoutubeStatsPost):
     uuid: str
-    platformId: str
+    youtube_channel: str
+
+
+class YoutubeVideoPost(BaseModel):
     url: str
-    title: str
-    thumbnail: str
-    stats: list[YoutubeVideoStatistics]
+    title: str | None
+    thumbnail: str | None
+    description: str | None
 
 
-class YoutubeVideosIds(BaseModel):
-    ids: list
+class YoutubeVideoResponse(YoutubeVideoPost):
+    uuid: str
+    youtube_channel: str
+
+
+class YoutubeVideoStatsPost(BaseModel):
+    date: datetime.date | None
+    views: float | None
+    likes: float | None
+    comments: float | None
+    timestamp: datetime.datetime
+
+
+class YoutubeVideoStatsResponse(YoutubeVideoStatsPost):
+    uuid: str
+    youtube_video: str
+
+
+class YoutubeCompleteStatsResponse(BaseModel):
+    uuid: str
+    videos: List[YoutubeVideoResponse] = []
+    stats: List[YoutubeStatsResponse] = []

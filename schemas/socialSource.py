@@ -1,5 +1,7 @@
 from pydantic import BaseModel
-class SocialSourceBase(BaseModel):
+
+
+class SocialSourcePost(BaseModel):
     name: str
     youtube: str | None
     linkedin: str | None
@@ -11,6 +13,7 @@ class SocialSourceBase(BaseModel):
     rss: str | None
     email: str | None
 
-class SocialSource(SocialSourceBase):
+
+class SocialSourceResponse(SocialSourcePost):
     uuid: str
     active: bool

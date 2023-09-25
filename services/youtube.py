@@ -1,91 +1,82 @@
+import datetime
 import uuid
-from dtos.youtube import YoutubeVideoStatisticsDto, youtubeVideosDto
-from server.mongoClient import db
+from sqlmodel import Session, select
 from pymongo import DESCENDING
 from services.youtubeScraper import YouTubeScrapper
+from models.youtube import YoutubeChannel, YouTubeStats, YouTubeVideo, YouTubeVideoStats
+from schemas.youtube import YoutubeStatsResponse, YoutubeCompleteStatsResponse
 
 
-socialSourceCollenction = db['socialsources']
-youtubeStatsCollection = db['youtubestatistics']
-youtubeVideoCollection = db['youtubevideos']
-youtubeVideoStatistics = db['youtubevideostatistics']
-
-
-async def scrapeYoutubeChannel(id: str):
-    stats = await getYoutubeChannelStats(id)
-    videos = await getYoutubeChannelVideos(id)
-    ids = [item['uuid'] for item in videos]
-    statistisc = await scrapeYouTubeVideos(ids)
+async def scrapeYoutubeChannel(session: Session, channelId: str):
+    await getYoutubeChannelStats(session, channelId)
+    ids = await getYoutubeChannelVideos(session, channelId)
+    await scrapeYouTubeVideos(session, ids)
     return
 
 
-async def getYoutubeChannelStats(id: str):
-    socialSource = socialSourceCollenction.find_one({'uuid': id})
-    if not socialSource:
-        raise ValueError("Social source not found")
-    scraper = YouTubeScrapper(socialSource["youtube"]["username"])
+async def getYoutubeChannelStats(session: Session, channelId: str) -> YoutubeStatsResponse:
+    query = select(YoutubeChannel).where(YoutubeChannel.uuid == channelId)
+    channel = session.exec(query).first()
+    if not channel:
+        raise ValueError("Channel not found")
+    scraper = YouTubeScrapper(channel.username)
     statistics = await scraper.getChannelData()
-    statistics["platformId"] = socialSource["youtube"]["uuid"]
-    youtubeStatsCollection.insert_one(statistics)
+    newStat = YouTubeStats(
+        **statistics.dict(), youtube_channel=channelId)
+    session.add(newStat)
+    session.commit()
+    session.refresh(newStat)
+    return newStat
 
 
-async def getYoutubeChannelVideos(id: str):
-    socialSource = socialSourceCollenction.find_one({'uuid': id})
-    if not socialSource:
-        raise ValueError("Social source not found")
-    scraper = YouTubeScrapper(socialSource["youtube"]["username"])
+async def getYoutubeChannelVideos(session: Session, channelId: str) -> list:
+    query = select(YoutubeChannel).where(YoutubeChannel.uuid == channelId)
+    channel = session.exec(query).first()
+    if not channel:
+        raise ValueError("Channel not found")
+    scraper = YouTubeScrapper(channel.username)
     videos = await scraper.getChannelVideos()
-    dataToInsert = []
+    insertedIds = []
+
     for video in videos:
-        exists = youtubeVideoCollection.find_one({"url": video["url"]})
+        exists = session.exec(select(YouTubeVideo).where(
+            YouTubeVideo.url == video.url)).first()
+
         if not exists:
-            video["uuid"] = str(uuid.uuid4())
-            video["platformId"] = socialSource["youtube"]["uuid"]
-            dataToInsert.append(video)
+            insert = YouTubeVideo(
+                **video.dict(), youtube_channel=channelId, uuid=str(uuid.uuid4()))
+            session.add(insert)
+            session.commit()
+            session.refresh(insert)
+            insertedIds.append(insert.uuid)
 
-    youtubeVideoCollection.insert_many(dataToInsert)
-    inserted = youtubeVideoCollection.find(
-        {'platformId': socialSource["youtube"]["uuid"]})
-    return inserted
+        else:
+            exists.title = video.title
+            exists.thumbnail = video.thumbnail
+            exists.youtube_channel = channelId
+            exists.description = video.description
+            insertedIds.append(exists.uuid)
+
+    return insertedIds
 
 
-async def scrapeYouTubeVideos(ids: list):
+async def scrapeYouTubeVideos(session: Session, ids: list[str]):
     for id in ids:
-        video = youtubeVideoCollection.find_one({'uuid': id})
-        print(f"Scraping {video}")
+        video = session.exec(select(YouTubeVideo).where(
+            YouTubeVideo.uuid == id)).first()
         scraper = YouTubeScrapper()
-        info = await scraper.getVideoStatistics(video['url'])
-        info['videoId'] = video['uuid']
-        youtubeVideoStatistics.insert_one(info)
-    return
+        info = await scraper.getVideoStatistics(video.url)
+
+        newStat = YouTubeVideoStats(
+            **info.dict(), video=id, uuid=str(uuid.uuid4()))
+        session.add(newStat)
+        session.commit()
+        session.refresh(newStat)
 
 
-async def findYoutubeStats(platformId: str):
-    result = youtubeStatsCollection.find_one({'platformId': platformId})
-    return result
-
-
-async def findYoutubeChannelVideos(platformId: str):
-    videos = youtubeVideoCollection.find({'platformId': platformId})
-    response = []
-    for video in videos:
-        lastStat = youtubeVideoStatistics.find_one(
-            {'videoId': video['uuid']}, sort=[("timestamp", DESCENDING)])
-        try:
-            video['stats'] = YoutubeVideoStatisticsDto([lastStat])
-        except:
-            video['stats'] = []
-        response.append(video)
-    return youtubeVideosDto(response)
-
-
-async def findYoutubeVideo(platformId: str, id: str):
-    platform = youtubeStatsCollection.find_one({'platformId': platformId})
-    if not platform:
-        raise ValueError('Platform not found')
-
-    video = youtubeVideoCollection.find_one({'uuid': id})
-    stats = youtubeVideoStatistics.find(
-        {'videoId': id}, sort=[("timestamp", DESCENDING)])
-    video['stats'] = YoutubeVideoStatisticsDto(stats)
-    return video
+async def findYoutubeChannel(session: Session, channelId: str) -> YoutubeCompleteStatsResponse:
+    stats = session.exec(select(YouTubeStats).where(
+        YouTubeStats.youtube_channel == channelId)).all()
+    videos = session.exec(select(YouTubeVideo).where(
+        YouTubeVideo.youtube_channel == channelId)).all()
+    return YoutubeCompleteStatsResponse(uuid=channelId, stats=stats, videos=videos)
