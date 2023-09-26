@@ -1,5 +1,3 @@
-import datetime
-import uuid
 from sqlmodel import Session, select
 from pymongo import DESCENDING
 from services.youtubeScraper import YouTubeScrapper
@@ -44,7 +42,7 @@ async def getYoutubeChannelVideos(session: Session, channelId: str) -> list:
 
         if not exists:
             insert = YouTubeVideo(
-                **video.dict(), youtube_channel=channelId, uuid=str(uuid.uuid4()))
+                **video.dict(), youtube_channel=channelId)
             session.add(insert)
             session.commit()
             session.refresh(insert)
@@ -68,7 +66,7 @@ async def scrapeYouTubeVideos(session: Session, ids: list[str]):
         info = await scraper.getVideoStatistics(video.url)
 
         newStat = YouTubeVideoStats(
-            **info.dict(), video=id, uuid=str(uuid.uuid4()))
+            **info.dict(), video=id)
         session.add(newStat)
         session.commit()
         session.refresh(newStat)
