@@ -253,7 +253,7 @@ class YouTubeScrapper:
             response.comments = comments
         except:
             comments = -1
-            print(f"COMMENTS ERROR: {h2.text} -> {datetime.now()}")
+            print(f"COMMENTS ERROR:  -> {datetime.now()}")
 
         print(f"{datetime.now()}==============================")
         print(response)

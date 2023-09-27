@@ -7,8 +7,7 @@ from schemas.youtube import YoutubeStatsResponse, YoutubeCompleteStatsResponse
 
 async def scrapeYoutubeChannel(session: Session, channelId: str):
     await getYoutubeChannelStats(session, channelId)
-    ids = await getYoutubeChannelVideos(session, channelId)
-    await scrapeYouTubeVideos(session, ids)
+    getYoutubeChannelVideos(session, channelId)
     return
 
 
