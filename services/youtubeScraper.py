@@ -7,15 +7,17 @@ from datetime import datetime
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from schemas.youtube import YoutubeVideoResponse, YoutubeStatsPost, YoutubeVideoStatsPost, YoutubeVideoPost
+import logging
 
 
 class YouTubeScrapper:
     def __init__(self, user=''):
         self.user = user
         self.options = Options()
-        self.options.add_argument("--headless")
+        # self.options.add_argument("--headless")
         self.options.add_argument('--mute-audio')
         self.chrome = webdriver.Chrome(options=self.options)
+        logging.getLogger('selenium').setLevel(logging.ERROR)
 
     async def getChannelData(self) -> YoutubeStatsPost:
 
@@ -174,9 +176,10 @@ class YouTubeScrapper:
             )
             counter = counter + 1
             spans = info.find_elements(By.TAG_NAME, 'span')
-            try:
+            if len(spans) > 1:
                 txt = spans[2].text
                 txt = txt.split(' ')
+                print("FECHA: ", txt)
                 if len(txt[len(txt)-1]) > 3:
                     longDate = True
                     date = spans[2].text
@@ -187,8 +190,8 @@ class YouTubeScrapper:
                             date = date.split(': ')[1]
                             date = self.transformDate(date)
                     response.date = date
-            except:
-                print("No se puede dividir")
+            else:
+                print("No hay spans en la descripcion")
 
         if not longDate:
             print(f"DATE ERROR: {spans[0].text} -> {datetime.now()}")

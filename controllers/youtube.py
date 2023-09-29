@@ -36,10 +36,12 @@ async def getYoutubeVideos(channelId: str, session: Session = Depends(get_sessio
                 WHERE
                     {YouTubeVideo.__tablename__}.youtube_channel = '{channelId}'
                 GROUP BY
-                    {YouTubeVideo.__tablename__}.uuid
+                    {YouTubeVideo.__tablename__}.uuid, {YouTubeVideoStats.__tablename__}.date
+                HAVING
+                    COUNT({YouTubeVideoStats.__tablename__}.uuid) = 0 OR {YouTubeVideoStats.__tablename__}.date IS NULL;
                 ''')
     result = session.exec(query).all()
-    ids = [x.uuid for x in result if x.stats == 0]
+    ids = [x.uuid for x in result]
     asyncio.create_task(scrapeYouTubeVideos(session, ids))
     return 'scrapping...'
 

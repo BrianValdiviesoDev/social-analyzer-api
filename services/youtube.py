@@ -3,11 +3,12 @@ from pymongo import DESCENDING
 from services.youtubeScraper import YouTubeScrapper
 from models.youtube import YoutubeChannel, YouTubeStats, YouTubeVideo, YouTubeVideoStats
 from schemas.youtube import YoutubeStatsResponse, YoutubeCompleteStatsResponse
+import time
 
 
 async def scrapeYoutubeChannel(session: Session, channelId: str):
     await getYoutubeChannelStats(session, channelId)
-    getYoutubeChannelVideos(session, channelId)
+    await getYoutubeChannelVideos(session, channelId)
     return
 
 
@@ -59,16 +60,20 @@ async def getYoutubeChannelVideos(session: Session, channelId: str) -> list:
 
 async def scrapeYouTubeVideos(session: Session, ids: list[str]):
     for id in ids:
+        print("SCRAPE NEW VIDEO: ", id)
         video = session.exec(select(YouTubeVideo).where(
             YouTubeVideo.uuid == id)).first()
-        scraper = YouTubeScrapper()
-        info = await scraper.getVideoStatistics(video.url)
-
-        newStat = YouTubeVideoStats(
-            **info.dict(), video=id)
-        session.add(newStat)
-        session.commit()
-        session.refresh(newStat)
+        try:
+            scraper = YouTubeScrapper()
+            info = await scraper.getVideoStatistics(video.url)
+            newStat = YouTubeVideoStats(
+                **info.dict(), video=id)
+            session.add(newStat)
+            session.commit()
+            session.refresh(newStat)
+        except:
+            print("-----------------ERROR VIDEO---------------")
+            time.sleep(5)
 
 
 async def findYoutubeChannel(session: Session, channelId: str) -> YoutubeCompleteStatsResponse:

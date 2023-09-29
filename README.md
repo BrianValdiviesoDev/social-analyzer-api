@@ -76,6 +76,10 @@ MongoDB server
 - [ ] Implements authorization with API Gateway
 - [ ] Create a queue of scrapes
 - [ ] Create another instance to scrapes for no block api
+- [ ] Scrape youtube comments
+- [ ] Transcribe youtube videos
+- [ ] Scrape video recommendations for each video
+- [ ] Add log for manage scrapping time cost
 - [ ] Add linkedin scraper
 - [ ] Add tiktok scraper
 - [ ] Add instagram scraper
