@@ -1,6 +1,6 @@
 # Content creator API
 
-A platform to create blog content and market research
+A platform to scrape social media contents
 
 ## Environment Variables
 
@@ -16,7 +16,6 @@ To run this project, you will need to add the following environment variables to
 
 `DB_PASSWORD` : mongodb password
 
-`API_GATEWAY_IP` : XXX.XXX.X.X
 
 ## Tech Stack
 
@@ -75,7 +74,6 @@ MongoDB server
 - [x] Refactor: separate platforms from social sources
 - [ ] Implements authorization with API Gateway
 - [ ] Create a queue of scrapes
-- [ ] Create another instance to scrapes for no block api
 - [ ] Add linkedin scraper
 - [ ] Add tiktok scraper
 - [ ] Add instagram scraper
